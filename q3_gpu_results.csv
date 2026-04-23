@@ -1,0 +1,5 @@
+name,model_class,params,augmentation,optimizer,lr,finetune_lr,weight_decay,label_smoothing,epochs,finetune_epochs,final_val_accuracy,best_val_accuracy,test_accuracy,checkpoint,elapsed_seconds
+baseline_checkpoint_eval,ImageClassifierNet,56559,none,checkpoint,,,,,0,0,,,0.8307446808510638,model.pth,0.0
+baseline_adamw_label_smoothing,ImageClassifierNet,56559,none,AdamW,0.001,0.0005,0.0001,0.05,10,2,0.8536347517730496,0.8536347517730496,0.8575531914893617,q3_experiment_models/baseline_adamw_label_smoothing.pth,91.4059190750122
+tiny_resnet_adamw_label_smoothing,TinyResNet,89615,none,AdamW,0.001,0.0005,0.0001,0.05,10,2,0.862854609929078,0.862854609929078,0.8603723404255319,q3_experiment_models/tiny_resnet_adamw_label_smoothing.pth,65.68694233894348
+tiny_resnet_aug_adamw_label_smoothing,TinyResNet,89615,rotation10_translate008_scale095_105,AdamW,0.001,0.0005,0.0001,0.05,10,2,0.7610815602836879,0.7610815602836879,0.7828723404255319,q3_experiment_models/tiny_resnet_aug_adamw_label_smoothing.pth,125.20311522483826
