@@ -25,3 +25,28 @@
 - Not run:
   - Did not run `Q3.ipynb`.
   - Did not run dataset download or model training.
+
+## 2026-04-23 17:46:53 HKT
+
+- Role: Codex coding agent
+- Task: Closed the Q3 GPU experiment line and recorded the final selected result in the notebook.
+- Files changed: `Q3.ipynb`, `Q3.py`, `Q3_gpu_experiments.py`, `run_q3_gpu_experiments.sbatch`, `q3_gpu_results.json`, `q3_gpu_results.csv`, `q3_gpu_ablation_results.json`, `q3_gpu_ablation_results.csv`, `q3_experiment_models/`, `q3_ablation_models/`
+- Summary:
+  - Added existing HKU GPU Farm experiment results into `Q3.ipynb` and regenerated `Q3.py` for diff review.
+  - Selected `TinyResNet AvgPool variant` as the final best model.
+  - Marked this Q3 improvement line as complete and ready to switch away from Q3.
+- Implementation:
+  - Kept all trained models under the 100,000-parameter assignment limit.
+  - Compared the baseline checkpoint, AdamW/label-smoothing baseline, TinyResNet variants, dropout ablations, label-smoothing ablations, and AvgPool downsampling variant.
+  - Final selected checkpoint: `q3_ablation_models/tiny_resnet_avgpool_variant.pth`.
+  - Final selected result: 89,615 parameters, validation accuracy `0.8848`, test accuracy `0.8834`.
+  - Improvement over original baseline checkpoint: test accuracy `0.8307` to `0.8834`, about `+5.26` absolute percentage points.
+  - Noted that the mild augmentation run underperformed, so the final selected model uses no augmentation.
+- Verification:
+  - Confirmed `Q3.ipynb` is valid JSON.
+  - Regenerated `Q3.py` from `Q3.ipynb` using conda environment `7606`.
+  - Ran `conda run -n 7606 python -m py_compile Q3.py`.
+  - Confirmed the final checkpoint path is present in the local result files.
+- Not run:
+  - Did not rerun `Q3.ipynb`.
+  - Did not retrain models after recording the completed GPU Farm results.
