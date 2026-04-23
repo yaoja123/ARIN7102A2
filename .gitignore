@@ -4,3 +4,11 @@ AGENTS.md
 Q3_farm_added.ipynb
 model.pth
 MNIST_data/
+Q4/data/
+Q4/q4_gpu_outputs/
+Q4/__pycache__/
+Q4/.ipynb_checkpoints/
+Q4/*.pyc
+Q4/*.pth
+Q4/*.pt
+q4_gpu_training_*.out
