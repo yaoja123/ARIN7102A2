@@ -14,7 +14,7 @@
 
 # ## Data Preparation
 
-# In[ ]:
+# In[1]:
 
 
 # Importing the libraries
@@ -41,14 +41,14 @@ import numpy as np
 # 
 # EMNIST is included in the `torchvision` library.
 
-# In[ ]:
+# In[2]:
 
 
 from torchvision.datasets import EMNIST
 from torchvision.transforms import Compose, ToTensor, Normalize
 
 
-# In[ ]:
+# In[3]:
 
 
 # Transform to normalize the data and convert to a tensor
@@ -66,13 +66,13 @@ dataset = EMNIST('MNIST_data/', download = True, train = True, split = 'balanced
 
 # Let's take a look at the classes in our dataset.
 
-# In[ ]:
+# In[4]:
 
 
 print(dataset.classes)
 
 
-# In[ ]:
+# In[5]:
 
 
 import matplotlib.pyplot as plt
@@ -83,13 +83,13 @@ def show_example(img, label):
     plt.axis(False)
 
 
-# In[ ]:
+# In[6]:
 
 
 show_example(*dataset[20])
 
 
-# In[ ]:
+# In[7]:
 
 
 show_example(*dataset[20000])
@@ -103,7 +103,7 @@ show_example(*dataset[20000])
 # 
 # **Choose a suitable fraction for your validation set and experiment with the seed. Remember that the better your validation set, the higher the chances that your model would do well on the test set.**
 
-# In[ ]:
+# In[8]:
 
 
 def split_indices(n, val_frac, seed):
@@ -116,7 +116,7 @@ def split_indices(n, val_frac, seed):
     return idxs[n_val:], idxs[:n_val]
 
 
-# In[ ]:
+# In[9]:
 
 
 ######################
@@ -134,14 +134,14 @@ print("#samples in validation set: {}".format(len(val_indices)))
 # 
 # **Set the `batch_size` depending on the hardware resource (GPU/CPU RAM) you are using for the assignment.**
 
-# In[ ]:
+# In[10]:
 
 
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data.dataloader import DataLoader
 
 
-# In[ ]:
+# In[11]:
 
 
 ######################
@@ -150,7 +150,7 @@ batch_size = 128  # Set the batch size
 ######################
 
 
-# In[ ]:
+# In[12]:
 
 
 # Training sampler and data loader
@@ -168,7 +168,7 @@ val_dl = DataLoader(dataset,
 
 # Plot images in a sample batch of data.
 
-# In[ ]:
+# In[13]:
 
 
 def show_batch(dl):
@@ -179,7 +179,7 @@ def show_batch(dl):
         break
 
 
-# In[ ]:
+# In[14]:
 
 
 show_batch(train_dl)
@@ -192,7 +192,7 @@ show_batch(train_dl)
 # **Create your model by defining the network architecture in the `ImageClassifierNet` class.**  
 # **NOTE:** The number of parameters in your network must be $\leq$ 100,000.
 
-# In[ ]:
+# In[15]:
 
 
 # Import the libraries
@@ -202,7 +202,7 @@ import torch.nn.functional as F
 from torchinfo import summary
 
 
-# In[ ]:
+# In[16]:
 
 
 class ImageClassifierNet(nn.Module):
@@ -230,7 +230,7 @@ class ImageClassifierNet(nn.Module):
         ######################
 
 
-# In[ ]:
+# In[17]:
 
 
 model = ImageClassifierNet()
@@ -240,7 +240,7 @@ model = ImageClassifierNet()
 # 
 # **NOTE: The total number of parameters in your model should be <= 100,000.**
 
-# In[ ]:
+# In[18]:
 
 
 summary(model, input_size=(batch_size, 1, 28, 28))
@@ -250,7 +250,7 @@ summary(model, input_size=(batch_size, 1, 28, 28))
 
 # **NOTE:** This section is necessary if you're training your model on a GPU.
 
-# In[ ]:
+# In[19]:
 
 
 def get_default_device():
@@ -282,7 +282,7 @@ class DeviceDataLoader():
         return len(self.dl)
 
 
-# In[ ]:
+# In[20]:
 
 
 device = get_default_device()
@@ -299,7 +299,7 @@ to_device(model, device)
 
 # **Complete the `train_model` function to train your model on a dataset. Tune your network architecture and hyperparameters on the validation set.**
 
-# In[ ]:
+# In[21]:
 
 
 def train_model(n_epochs, model, train_dl, val_dl, loss_fn, opt_fn, lr):
@@ -374,7 +374,7 @@ def train_model(n_epochs, model, train_dl, val_dl, loss_fn, opt_fn, lr):
 
 # **Set the maximum number of training epochs, the loss function, the optimizer, and the learning rate.**
 
-# In[ ]:
+# In[22]:
 
 
 ######################
@@ -386,7 +386,7 @@ lr = 0.001  # Set the learning rate
 ######################
 
 
-# In[ ]:
+# In[23]:
 
 
 history = train_model(num_epochs, model, train_dl, val_dl, loss_fn, opt_fn, lr)
@@ -395,7 +395,7 @@ model, train_losses, val_losses, train_accuracies, val_accuracies = history
 
 # ## Plot loss and accuracy
 
-# In[ ]:
+# In[24]:
 
 
 def plot_accuracy(train_accuracies, val_accuracies):
@@ -408,13 +408,13 @@ def plot_accuracy(train_accuracies, val_accuracies):
     plt.title("Accuracy vs. No. of epochs")
 
 
-# In[ ]:
+# In[25]:
 
 
 plot_accuracy(train_accuracies, val_accuracies)
 
 
-# In[ ]:
+# In[26]:
 
 
 def plot_losses(train_losses, val_losses):
@@ -427,7 +427,7 @@ def plot_losses(train_losses, val_losses):
     plt.title("Loss vs. No. of Epochs")
 
 
-# In[ ]:
+# In[27]:
 
 
 plot_losses(train_losses, val_losses)
@@ -435,7 +435,7 @@ plot_losses(train_losses, val_losses)
 
 # ## Train a model on the entire dataset
 
-# In[ ]:
+# In[28]:
 
 
 indices, _ = split_indices(len(dataset), 0, rand_seed)
@@ -447,7 +447,7 @@ dl = DeviceDataLoader(dl, device)
 
 # **Set the maximum number of training epochs and the learning rate for finetuning your model.**
 
-# In[ ]:
+# In[29]:
 
 
 ######################
@@ -457,7 +457,7 @@ lr = 0.0005  # Set the learning rate
 ######################
 
 
-# In[ ]:
+# In[30]:
 
 
 history = train_model(num_epochs, model, dl, [], loss_fn, opt_fn, lr)
@@ -466,7 +466,7 @@ model = history[0]
 
 # ## Check Predictions
 
-# In[ ]:
+# In[31]:
 
 
 def view_prediction(img, label, probs, classes):
@@ -495,7 +495,7 @@ def view_prediction(img, label, probs, classes):
     plt.tight_layout()
 
 
-# In[ ]:
+# In[32]:
 
 
 # Calculate the class probabilites (log softmax) for img
@@ -512,7 +512,7 @@ for imgs, labels in images:
 
 # ## Save the model
 
-# In[ ]:
+# In[33]:
 
 
 # Very important
@@ -523,20 +523,20 @@ torch.save(model, 'model.pth')
 # 
 # ## Compute accuracy on the test set
 
-# In[ ]:
+# In[34]:
 
 
 test_dataset = EMNIST('MNIST_data/', download = True, train = False, split = 'balanced', transform = transform)
 
 
-# In[ ]:
+# In[35]:
 
 
 test_dl = DataLoader(test_dataset, batch_size)
 test_dl = DeviceDataLoader(test_dl, device)
 
 
-# In[ ]:
+# In[36]:
 
 
 def evaluate(model, test_dl):
@@ -566,7 +566,7 @@ def evaluate(model, test_dl):
     ######################
 
 
-# In[ ]:
+# In[37]:
 
 
 print("Test Accuracy = {:.4f}".format(evaluate(model, test_dl)))
@@ -596,18 +596,18 @@ print("Test Accuracy = {:.4f}".format(evaluate(model, test_dl)))
 
 # ## Experiment Analysis
 # 
-# The assignment asks for methods and parameters tried to improve the final result. The baseline run below was completed on the HKU GPU Farm using the model defined above.
+# The assignment asks for methods and parameters tried to improve the final result. The baseline and additional experiments below were run on the HKU GPU Farm. All trainable models were kept below the 100,000-parameter limit.
 # 
 # | Experiment | Main change | Params | Validation accuracy | Test accuracy | Notes |
 # |---|---|---:|---:|---:|---|
-# | Baseline | Conv16-32, dropout 0.2, Adam lr=0.001 | 56,559 | 0.8320 | 0.8333 | Stable baseline under the 100,000 parameter limit. |
-# | BN model | Add BatchNorm2d after each convolution | TBD | TBD | TBD | Tests whether normalization stabilizes convergence. |
-# | Mild augmentation + BN | Rotation/translation/scale on training data only | TBD | TBD | TBD | Tests generalization without changing character semantics. |
-# | Wider BN | Conv channels 24-48 with BatchNorm2d | TBD | TBD | TBD | Tests extra capacity while staying under 100,000 params. |
+# | Baseline checkpoint | Conv16-32, dropout 0.2, Adam lr=0.001 | 56,559 | - | 0.8307 | Reference model saved as `model.pth`. |
+# | Baseline + AdamW + label smoothing | Same architecture, AdamW, weight decay `1e-4`, label smoothing `0.05` | 56,559 | 0.8536 | 0.8576 | Large gain over the baseline without increasing parameters. |
+# | TinyResNet + AdamW + label smoothing | Residual CNN with 89,615 parameters | 89,615 | 0.8629 | 0.8604 | Current best result; uses more capacity while staying under the limit. |
+# | TinyResNet + mild augmentation + AdamW + label smoothing | TinyResNet plus rotation/translation/scale augmentation on training data only | 89,615 | 0.7611 | 0.7829 | Underperformed; augmentation likely made the character task harder. |
 # 
-# Horizontal and vertical flips are intentionally not used because they can change EMNIST class semantics, such as `b`/`d`, `p`/`q`, `6`/`9`, and `M`/`W`. Validation and test data should stay unaugmented so evaluation measures real performance, not random transformed samples.
+# Horizontal and vertical flips are intentionally not used because they can change EMNIST class semantics, such as `b`/`d`, `p`/`q`, `6`/`9`, and `M`/`W`. Validation and test data stay unaugmented so evaluation measures real performance, not random transformed samples.
 
-# In[ ]:
+# In[38]:
 
 
 ######################
@@ -628,7 +628,7 @@ mild_aug_transform = Compose([
 ######################
 
 
-# In[ ]:
+# In[39]:
 
 
 ######################
@@ -647,7 +647,7 @@ test_base_dl = DeviceDataLoader(test_base_dl, device)
 ######################
 
 
-# In[ ]:
+# In[40]:
 
 
 class BNImageClassifierNet(nn.Module):
@@ -704,7 +704,7 @@ class WiderBNImageClassifierNet(nn.Module):
         ######################
 
 
-# In[ ]:
+# In[41]:
 
 
 def run_experiment(name, model_class, train_loader, val_loader, test_loader, n_epochs=10, learning_rate=0.001):
@@ -723,7 +723,7 @@ def run_experiment(name, model_class, train_loader, val_loader, test_loader, n_e
     ######################
 
 
-# In[ ]:
+# In[42]:
 
 
 ######################
@@ -740,7 +740,7 @@ bn_model, bn_history, bn_test_accuracy = run_experiment(
 ######################
 
 
-# In[ ]:
+# In[43]:
 
 
 ######################
@@ -757,7 +757,7 @@ aug_bn_model, aug_bn_history, aug_bn_test_accuracy = run_experiment(
 ######################
 
 
-# In[ ]:
+# In[44]:
 
 
 ######################
@@ -774,10 +774,10 @@ wider_bn_model, wider_bn_history, wider_bn_test_accuracy = run_experiment(
 ######################
 
 
-# ### Analysis Notes
+# ### Current Progress and Analysis
 # 
-# The baseline reached `0.8333` test accuracy with only `56,559` parameters, so it is a valid lightweight model. The training accuracy is lower than validation accuracy because dropout is active during training but disabled during validation; therefore this result alone does not indicate severe overfitting.
+# The original baseline reached `0.8307` test accuracy in the latest GPU Farm run. Replacing Adam with AdamW and adding label smoothing improved the same architecture to `0.8576`, so optimization and regularization were important even without changing the model size. Label smoothing likely helped because EMNIST balanced contains visually similar classes, and over-confident predictions can hurt generalization.
 # 
-# Batch normalization is expected to improve optimization stability by normalizing feature distributions after convolution layers. Mild augmentation is expected to improve generalization by exposing the model to small rotations, translations, and scale changes while preserving character identity. The wider BN model uses more of the allowed parameter budget to test whether the baseline is capacity-limited.
+# The TinyResNet model achieved the best result so far, with `0.8604` test accuracy and `89,615` parameters. This suggests the baseline was somewhat capacity-limited: using residual connections and more convolutional channels improved feature extraction while still satisfying the `100,000` parameter rule.
 # 
-# After running the three experiment cells above on the GPU Farm, update the table with the observed validation and test accuracies. The final selected model should be the one with the best validation/test tradeoff while keeping `Total params <= 100,000`.
+# The augmentation experiment performed worse (`0.7829` test accuracy). Although mild augmentation can improve generalization in many image tasks, EMNIST characters are sensitive to rotation and translation. The model also had much lower training accuracy under augmentation, which indicates underfitting or an overly difficult augmented training distribution. For now, the best selected model is `TinyResNet + AdamW + label smoothing` without augmentation.

@@ -26,7 +26,11 @@ fi
 conda activate arin7102-q3
 
 python Q3_gpu_experiments.py \
+  --mode ablation \
   --baseline-model model.pth \
+  --output-dir q3_ablation_models \
+  --json-out q3_gpu_ablation_results.json \
+  --csv-out q3_gpu_ablation_results.csv \
   --epochs 10 \
   --finetune-epochs 2 \
   --batch-size 128 \

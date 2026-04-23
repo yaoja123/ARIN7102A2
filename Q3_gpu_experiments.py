@@ -84,7 +84,7 @@ class ResidualBlock(nn.Module):
         self.bn1 = nn.BatchNorm2d(channels)
         self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(channels)
-        self.dropout = nn.Dropout2d(dropout)
+        self.dropout = nn.Dropout2d(dropout) if dropout > 0 else nn.Identity()
 
     def forward(self, x):
         residual = x
@@ -94,9 +94,16 @@ class ResidualBlock(nn.Module):
         return F.relu(x + residual)
 
 
-class TinyResNet(nn.Module):
-    def __init__(self, n_channels=3):
-        super(TinyResNet, self).__init__()
+class TinyResNetTuned(nn.Module):
+    def __init__(self, n_channels=3, block_dropout=0.05, fc_dropout=0.25, second_pool="max"):
+        super(TinyResNetTuned, self).__init__()
+        if second_pool == "max":
+            pool2 = nn.MaxPool2d(2)
+        elif second_pool == "avg":
+            pool2 = nn.AvgPool2d(2)
+        else:
+            raise ValueError("second_pool must be 'max' or 'avg'")
+
         self.stem = nn.Sequential(
             nn.Conv2d(1, 24, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(24),
@@ -107,10 +114,10 @@ class TinyResNet(nn.Module):
             nn.Conv2d(24, 36, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(36),
             nn.ReLU(),
-            nn.MaxPool2d(2),
+            pool2,
         )
-        self.block = ResidualBlock(36, dropout=0.05)
-        self.dropout = nn.Dropout(0.25)
+        self.block = ResidualBlock(36, dropout=block_dropout)
+        self.dropout = nn.Dropout(fc_dropout) if fc_dropout > 0 else nn.Identity()
         self.fc1 = nn.Linear(36 * 7 * 7, 32)
         self.fc2 = nn.Linear(32, NUM_CLASSES)
 
@@ -121,6 +128,16 @@ class TinyResNet(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.dropout(F.relu(self.fc1(x)))
         return self.fc2(x)
+
+
+class TinyResNet(TinyResNetTuned):
+    def __init__(self, n_channels=3):
+        super(TinyResNet, self).__init__(
+            n_channels=n_channels,
+            block_dropout=0.05,
+            fc_dropout=0.25,
+            second_pool="max",
+        )
 
 
 def make_transforms():
@@ -392,8 +409,111 @@ def write_results(results, json_path, csv_path):
             writer.writerow({field: row.get(field) for field in fields})
 
 
+def make_model_factory(name, block_dropout=0.05, fc_dropout=0.25, second_pool="max"):
+    def factory():
+        return TinyResNetTuned(
+            block_dropout=block_dropout,
+            fc_dropout=fc_dropout,
+            second_pool=second_pool,
+        )
+
+    factory.__name__ = name
+    return factory
+
+
+def original_configs(basic_loaders, aug_loaders):
+    return [
+        {
+            "name": "baseline_adamw_label_smoothing",
+            "model_class": ImageClassifierNet,
+            "augmentation": "none",
+            "lr": 0.001,
+            "finetune_lr": 0.0005,
+            "weight_decay": 1e-4,
+            "label_smoothing": 0.05,
+            "loaders": basic_loaders,
+        },
+        {
+            "name": "tiny_resnet_adamw_label_smoothing",
+            "model_class": TinyResNet,
+            "augmentation": "none",
+            "lr": 0.001,
+            "finetune_lr": 0.0005,
+            "weight_decay": 1e-4,
+            "label_smoothing": 0.05,
+            "loaders": basic_loaders,
+        },
+        {
+            "name": "tiny_resnet_aug_adamw_label_smoothing",
+            "model_class": TinyResNet,
+            "augmentation": "rotation10_translate008_scale095_105",
+            "lr": 0.001,
+            "finetune_lr": 0.0005,
+            "weight_decay": 1e-4,
+            "label_smoothing": 0.05,
+            "loaders": aug_loaders,
+        },
+    ]
+
+
+def ablation_configs(basic_loaders):
+    return [
+        {
+            "name": "tiny_resnet_no_block_dropout",
+            "model_class": make_model_factory("TinyResNetNoBlockDropout", block_dropout=0.0, fc_dropout=0.25),
+            "augmentation": "none",
+            "lr": 0.001,
+            "finetune_lr": 0.0005,
+            "weight_decay": 1e-4,
+            "label_smoothing": 0.05,
+            "loaders": basic_loaders,
+        },
+        {
+            "name": "tiny_resnet_lower_dropout",
+            "model_class": make_model_factory("TinyResNetLowerDropout", block_dropout=0.0, fc_dropout=0.10),
+            "augmentation": "none",
+            "lr": 0.001,
+            "finetune_lr": 0.0005,
+            "weight_decay": 1e-4,
+            "label_smoothing": 0.05,
+            "loaders": basic_loaders,
+        },
+        {
+            "name": "tiny_resnet_smoothing_002",
+            "model_class": make_model_factory("TinyResNetSmoothing002", block_dropout=0.05, fc_dropout=0.25),
+            "augmentation": "none",
+            "lr": 0.001,
+            "finetune_lr": 0.0005,
+            "weight_decay": 1e-4,
+            "label_smoothing": 0.02,
+            "loaders": basic_loaders,
+        },
+        {
+            "name": "tiny_resnet_no_label_smoothing",
+            "model_class": make_model_factory("TinyResNetNoLabelSmoothing", block_dropout=0.05, fc_dropout=0.25),
+            "augmentation": "none",
+            "lr": 0.001,
+            "finetune_lr": 0.0005,
+            "weight_decay": 1e-4,
+            "label_smoothing": 0.0,
+            "loaders": basic_loaders,
+        },
+        {
+            "name": "tiny_resnet_avgpool_variant",
+            "model_class": make_model_factory("TinyResNetAvgPool", block_dropout=0.05, fc_dropout=0.25, second_pool="avg"),
+            "augmentation": "none",
+            "lr": 0.001,
+            "finetune_lr": 0.0005,
+            "weight_decay": 1e-4,
+            "label_smoothing": 0.05,
+            "loaders": basic_loaders,
+        },
+    ]
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Run Q3 EMNIST GPU experiments.")
+    parser.add_argument("--mode", choices=["original", "ablation", "all"], default="original")
     parser.add_argument("--data-dir", default="MNIST_data/")
     parser.add_argument("--baseline-model", default="model.pth")
     parser.add_argument("--output-dir", default="q3_experiment_models")
@@ -415,6 +535,13 @@ def main():
     if args.smoke:
         args.epochs = 1
         args.finetune_epochs = 0
+    if args.mode == "ablation":
+        if args.output_dir == "q3_experiment_models":
+            args.output_dir = "q3_ablation_models"
+        if args.json_out == "q3_gpu_results.json":
+            args.json_out = "q3_gpu_ablation_results.json"
+        if args.csv_out == "q3_gpu_results.csv":
+            args.csv_out = "q3_gpu_ablation_results.csv"
 
     set_seed(args.seed)
     device = torch.device(args.device if args.device == "cuda" and torch.cuda.is_available() else "cpu")
@@ -463,38 +590,11 @@ def main():
     else:
         print(f"baseline checkpoint not found: {baseline_path}", flush=True)
 
-    configs = [
-        {
-            "name": "baseline_adamw_label_smoothing",
-            "model_class": ImageClassifierNet,
-            "augmentation": "none",
-            "lr": 0.001,
-            "finetune_lr": 0.0005,
-            "weight_decay": 1e-4,
-            "label_smoothing": 0.05,
-            "loaders": basic_loaders,
-        },
-        {
-            "name": "tiny_resnet_adamw_label_smoothing",
-            "model_class": TinyResNet,
-            "augmentation": "none",
-            "lr": 0.001,
-            "finetune_lr": 0.0005,
-            "weight_decay": 1e-4,
-            "label_smoothing": 0.05,
-            "loaders": basic_loaders,
-        },
-        {
-            "name": "tiny_resnet_aug_adamw_label_smoothing",
-            "model_class": TinyResNet,
-            "augmentation": "rotation10_translate008_scale095_105",
-            "lr": 0.001,
-            "finetune_lr": 0.0005,
-            "weight_decay": 1e-4,
-            "label_smoothing": 0.05,
-            "loaders": aug_loaders,
-        },
-    ]
+    configs = []
+    if args.mode in ("original", "all"):
+        configs.extend(original_configs(basic_loaders, aug_loaders))
+    if args.mode in ("ablation", "all"):
+        configs.extend(ablation_configs(basic_loaders))
 
     for config in configs:
         result = run_training_experiment(args, config, config["loaders"], device, output_dir)
