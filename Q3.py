@@ -479,9 +479,15 @@ def view_prediction(img, label, probs, classes):
     ax1.imshow(img.resize_(1, 28, 28).cpu().numpy().squeeze(), cmap='Greys_r')
     ax1.axis('off')
     ax1.set_title('Actual: {}'.format(classes[label]))
-    ax2.barh(np.arange(10), probs)
+    ##################
+    # ax2.barh(np.arange(10), probs)
+    # ax2.set_aspect(0.1)
+    # ax2.set_yticks(np.arange(10))
+    ax2.barh(np.arange(len(classes)), probs)
     ax2.set_aspect(0.1)
-    ax2.set_yticks(np.arange(10))
+    ax2.set_yticks(np.arange(len(classes)))
+    ##################
+
     ax2.set_yticklabels(classes, size='small');
     ax2.set_title('Predicted: probabilities')
     ax2.set_xlim(0, 1.1)
@@ -588,8 +594,190 @@ print("Test Accuracy = {:.4f}".format(evaluate(model, test_dl)))
 #     - Activation functions
 #     - Optimizers
 
+# ## Experiment Analysis
+# 
+# The assignment asks for methods and parameters tried to improve the final result. The baseline run below was completed on the HKU GPU Farm using the model defined above.
+# 
+# | Experiment | Main change | Params | Validation accuracy | Test accuracy | Notes |
+# |---|---|---:|---:|---:|---|
+# | Baseline | Conv16-32, dropout 0.2, Adam lr=0.001 | 56,559 | 0.8320 | 0.8333 | Stable baseline under the 100,000 parameter limit. |
+# | BN model | Add BatchNorm2d after each convolution | TBD | TBD | TBD | Tests whether normalization stabilizes convergence. |
+# | Mild augmentation + BN | Rotation/translation/scale on training data only | TBD | TBD | TBD | Tests generalization without changing character semantics. |
+# | Wider BN | Conv channels 24-48 with BatchNorm2d | TBD | TBD | TBD | Tests extra capacity while staying under 100,000 params. |
+# 
+# Horizontal and vertical flips are intentionally not used because they can change EMNIST class semantics, such as `b`/`d`, `p`/`q`, `6`/`9`, and `M`/`W`. Validation and test data should stay unaugmented so evaluation measures real performance, not random transformed samples.
+
 # In[ ]:
 
 
+######################
+# Scope: Q3 additional experiment transforms only
+from torchvision.transforms import RandomRotation, RandomAffine
+
+basic_transform = Compose([
+    ToTensor(),
+    Normalize((0.5,), (0.5,))
+])
+
+mild_aug_transform = Compose([
+    RandomRotation(10),
+    RandomAffine(degrees=0, translate=(0.08, 0.08), scale=(0.95, 1.05)),
+    ToTensor(),
+    Normalize((0.5,), (0.5,))
+])
+######################
 
 
+# In[ ]:
+
+
+######################
+# Scope: Q3 additional experiment dataloaders only
+train_aug_dataset = EMNIST('MNIST_data/', download=True, train=True, split='balanced', transform=mild_aug_transform)
+val_base_dataset = EMNIST('MNIST_data/', download=True, train=True, split='balanced', transform=basic_transform)
+test_base_dataset = EMNIST('MNIST_data/', download=True, train=False, split='balanced', transform=basic_transform)
+
+train_aug_dl = DataLoader(train_aug_dataset, batch_size, sampler=SubsetRandomSampler(train_indices))
+val_base_dl = DataLoader(val_base_dataset, batch_size, sampler=SubsetRandomSampler(val_indices))
+test_base_dl = DataLoader(test_base_dataset, batch_size)
+
+train_aug_dl = DeviceDataLoader(train_aug_dl, device)
+val_base_dl = DeviceDataLoader(val_base_dl, device)
+test_base_dl = DeviceDataLoader(test_base_dl, device)
+######################
+
+
+# In[ ]:
+
+
+class BNImageClassifierNet(nn.Module):
+    def __init__(self, n_channels=3):
+        super(BNImageClassifierNet, self).__init__()
+        ######################
+        # Scope: Q3 batch-normalized CNN architecture only
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(32)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.dropout = nn.Dropout(0.2)
+        self.fc1 = nn.Linear(32 * 7 * 7, 32)
+        self.fc2 = nn.Linear(32, 47)
+        ######################
+
+    def forward(self, X):
+        ######################
+        # Scope: Q3 batch-normalized CNN forward pass only
+        X = self.pool(F.relu(self.bn1(self.conv1(X))))
+        X = self.pool(F.relu(self.bn2(self.conv2(X))))
+        X = X.view(X.size(0), -1)
+        X = self.dropout(F.relu(self.fc1(X)))
+        X = self.fc2(X)
+        return X
+        ######################
+
+
+class WiderBNImageClassifierNet(nn.Module):
+    def __init__(self, n_channels=3):
+        super(WiderBNImageClassifierNet, self).__init__()
+        ######################
+        # Scope: Q3 wider batch-normalized CNN architecture only
+        self.conv1 = nn.Conv2d(1, 24, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(24)
+        self.conv2 = nn.Conv2d(24, 48, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(48)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.dropout = nn.Dropout(0.2)
+        self.fc1 = nn.Linear(48 * 7 * 7, 32)
+        self.fc2 = nn.Linear(32, 47)
+        ######################
+
+    def forward(self, X):
+        ######################
+        # Scope: Q3 wider batch-normalized CNN forward pass only
+        X = self.pool(F.relu(self.bn1(self.conv1(X))))
+        X = self.pool(F.relu(self.bn2(self.conv2(X))))
+        X = X.view(X.size(0), -1)
+        X = self.dropout(F.relu(self.fc1(X)))
+        X = self.fc2(X)
+        return X
+        ######################
+
+
+# In[ ]:
+
+
+def run_experiment(name, model_class, train_loader, val_loader, test_loader, n_epochs=10, learning_rate=0.001):
+    """Train and evaluate one Q3 experiment configuration."""
+    ######################
+    # Scope: Q3 additional experiment runner only
+    print("Experiment:", name)
+    experiment_model = to_device(model_class(), device)
+    summary(experiment_model, input_size=(batch_size, 1, 28, 28))
+
+    history = train_model(n_epochs, experiment_model, train_loader, val_loader, loss_fn, opt_fn, learning_rate)
+    test_accuracy = evaluate(experiment_model, test_loader)
+    print("{} Test Accuracy = {:.4f}".format(name, test_accuracy))
+
+    return experiment_model, history, test_accuracy
+    ######################
+
+
+# In[ ]:
+
+
+######################
+# Scope: Q3 BN-only experiment only
+bn_model, bn_history, bn_test_accuracy = run_experiment(
+    "BN model",
+    BNImageClassifierNet,
+    train_dl,
+    val_dl,
+    test_dl,
+    n_epochs=10,
+    learning_rate=0.001
+)
+######################
+
+
+# In[ ]:
+
+
+######################
+# Scope: Q3 mild augmentation plus BN experiment only
+aug_bn_model, aug_bn_history, aug_bn_test_accuracy = run_experiment(
+    "Mild augmentation + BN",
+    BNImageClassifierNet,
+    train_aug_dl,
+    val_base_dl,
+    test_base_dl,
+    n_epochs=10,
+    learning_rate=0.001
+)
+######################
+
+
+# In[ ]:
+
+
+######################
+# Scope: Q3 wider BN experiment only
+wider_bn_model, wider_bn_history, wider_bn_test_accuracy = run_experiment(
+    "Wider BN",
+    WiderBNImageClassifierNet,
+    train_aug_dl,
+    val_base_dl,
+    test_base_dl,
+    n_epochs=10,
+    learning_rate=0.001
+)
+######################
+
+
+# ### Analysis Notes
+# 
+# The baseline reached `0.8333` test accuracy with only `56,559` parameters, so it is a valid lightweight model. The training accuracy is lower than validation accuracy because dropout is active during training but disabled during validation; therefore this result alone does not indicate severe overfitting.
+# 
+# Batch normalization is expected to improve optimization stability by normalizing feature distributions after convolution layers. Mild augmentation is expected to improve generalization by exposing the model to small rotations, translations, and scale changes while preserving character identity. The wider BN model uses more of the allowed parameter budget to test whether the baseline is capacity-limited.
+# 
+# After running the three experiment cells above on the GPU Farm, update the table with the observed validation and test accuracies. The final selected model should be the one with the best validation/test tradeoff while keeping `Total params <= 100,000`.

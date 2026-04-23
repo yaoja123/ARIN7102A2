@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 AGENTS.md
 Q3_farm_added.ipynb
+model.pth
+MNIST_data/
