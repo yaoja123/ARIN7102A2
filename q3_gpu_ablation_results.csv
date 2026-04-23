@@ -1,0 +1,7 @@
+name,model_class,params,augmentation,optimizer,lr,finetune_lr,weight_decay,label_smoothing,epochs,finetune_epochs,final_val_accuracy,best_val_accuracy,test_accuracy,checkpoint,elapsed_seconds
+baseline_checkpoint_eval,ImageClassifierNet,56559,none,checkpoint,,,,,0,0,,,0.8307446808510638,model.pth,0.0
+tiny_resnet_no_block_dropout,TinyResNetNoBlockDropout,89615,none,AdamW,0.001,0.0005,0.0001,0.05,10,2,0.8613475177304964,0.8613475177304964,0.8621808510638298,q3_ablation_models/tiny_resnet_no_block_dropout.pth,83.37793231010437
+tiny_resnet_lower_dropout,TinyResNetLowerDropout,89615,none,AdamW,0.001,0.0005,0.0001,0.05,10,2,0.8781028368794326,0.8781028368794326,0.8798936170212766,q3_ablation_models/tiny_resnet_lower_dropout.pth,81.4777626991272
+tiny_resnet_smoothing_002,TinyResNetSmoothing002,89615,none,AdamW,0.001,0.0005,0.0001,0.02,10,2,0.860195035460993,0.860195035460993,0.8636170212765958,q3_ablation_models/tiny_resnet_smoothing_002.pth,88.06063961982727
+tiny_resnet_no_label_smoothing,TinyResNetNoLabelSmoothing,89615,none,AdamW,0.001,0.0005,0.0001,0.0,10,2,0.8609042553191489,0.863031914893617,0.8687765957446808,q3_ablation_models/tiny_resnet_no_label_smoothing.pth,68.96011400222778
+tiny_resnet_avgpool_variant,TinyResNetAvgPool,89615,none,AdamW,0.001,0.0005,0.0001,0.05,10,2,0.8847517730496454,0.8847517730496454,0.8833510638297872,q3_ablation_models/tiny_resnet_avgpool_variant.pth,73.09442377090454
